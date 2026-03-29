@@ -296,6 +296,27 @@ else
 fi
 
 # ============================================
+# SUPERPOWERS PLUGIN
+# ============================================
+
+header "SUPERPOWERS PLUGIN"
+
+if [ "$HAS_CLAUDE" = true ]; then
+    if [ "$DRY_RUN" = false ]; then
+        if claude plugin list 2>/dev/null | grep -q "superpowers"; then
+            info "superpowers plugin already installed"
+        else
+            info "Installing superpowers plugin..."
+            claude plugin install superpowers@superpowers-marketplace || warn "Failed to install superpowers plugin (non-critical)"
+        fi
+    else
+        echo "[DRY-RUN] Would run: claude plugin install superpowers@superpowers-marketplace"
+    fi
+else
+    warn "claude not found — skipping superpowers plugin install"
+fi
+
+# ============================================
 # DONE
 # ============================================
 
@@ -312,6 +333,7 @@ else
     echo "  → CLAUDE.md rules in ~/.claude/CLAUDE.md"
     echo "  → Learned patterns in ~/.claude/rules/learned/"
     echo "  → settings.json hooks configured"
+    echo "  → superpowers plugin (if claude installed)"
     echo ""
 
     if [ "$HAS_CLAUDE" = false ]; then
