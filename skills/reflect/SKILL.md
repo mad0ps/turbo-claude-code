@@ -48,8 +48,14 @@ Look for these signals in conversation:
 For each signal, determine:
 - **domain**: programming, devops, design, security, workflow, tools (or new if none fit)
 - **scope**: `global` (universal) or `project` (specific to this codebase)
+- **storage**: `rules` (universal, always loaded) or `knowledge` (domain-specific, lazy-loaded)
 - **confidence**: see scale below
 - **instinct-id**: short kebab-case identifier
+
+**Storage decision:**
+- `~/.claude/rules/learned/` — instincts that apply to EVERY session (workflow, tools). Always loaded = costs tokens every time.
+- `~/.claude/knowledge/` — domain-specific instincts (design, research, writing, devops, marketing). Loaded on demand when entering that domain. Saves tokens.
+- Rule of thumb: if the instinct is only relevant when doing a specific type of work → knowledge/. If it's always relevant → rules/learned/.
 
 **Confidence scale:**
 
@@ -67,7 +73,8 @@ Priority: corrections > decisions > patterns > preferences.
 ### Step 3: Deduplicate
 
 Read existing instinct files:
-- Global: `~/.claude/rules/learned/*.md`
+- Global always-loaded: `~/.claude/rules/learned/*.md`
+- Global lazy-loaded: `~/.claude/knowledge/*.md`
 - Project: `<project>/.claude/rules/learned/*.md`
 
 If instinct already exists → bump confidence (+0.1, max 0.9), update date. Do NOT create duplicate.
@@ -90,8 +97,9 @@ If over budget → consolidate before adding:
 ### Step 5: Write Instincts
 
 **Storage paths:**
-- Global: `~/.claude/rules/learned/<domain>.md`
-- Project: `<project>/.claude/rules/learned/<domain>.md`
+- Always-loaded (workflow, tools): `~/.claude/rules/learned/<domain>.md`
+- Lazy-loaded (design, research, writing, devops, etc): `~/.claude/knowledge/<domain>.md`
+- Project-specific: `<project>/.claude/rules/learned/<domain>.md`
 
 **Create directories lazily** — only when first instinct for that scope is written.
 
@@ -116,7 +124,7 @@ Extracted N instincts:
   [domain] +new: instinct-id (confidence)
   [domain] ↑: instinct-id (old → new confidence)
   [domain] =skip: instinct-id (already exists)
-Saved to: ~/.claude/rules/learned/ (N global), .claude/rules/learned/ (N project)
+Saved to: ~/.claude/rules/learned/ (N always-loaded), ~/.claude/knowledge/ (N lazy-loaded), .claude/rules/learned/ (N project)
 Token budget: XX/100 lines used
 ```
 

@@ -191,6 +191,26 @@ else
     warn "rules/learned not found in repo"
 fi
 
+# knowledge (lazy-load domain instincts)
+if [ -d "$REPO_DIR/knowledge" ]; then
+    if [ "$DRY_RUN" = false ]; then
+        mkdir -p "$HOME/.claude/knowledge"
+
+        for knowledge_file in "$REPO_DIR/knowledge"/*.md; do
+            if [ -f "$knowledge_file" ]; then
+                fname=$(basename "$knowledge_file")
+                target="$HOME/.claude/knowledge/$fname"
+                ln -sfn "$knowledge_file" "$target"
+            fi
+        done
+        info "Symlinked knowledge/ (lazy-load domain instincts)"
+    else
+        echo "[DRY-RUN] Would symlink knowledge/*.md -> ~/.claude/knowledge/"
+    fi
+else
+    warn "knowledge directory not found in repo"
+fi
+
 # ============================================
 # SETTINGS: GENERATE OR MERGE settings.json
 # ============================================
@@ -275,7 +295,7 @@ _generate_settings_nopy() {
         cat > "$SETTINGS_PATH" << SETTINGS
 {
   "permissions": {
-    "allow": ["Bash","Read","Edit","Write","Glob","Grep","WebFetch","WebSearch","NotebookEdit","Task","Skill"]
+    "allow": ["Bash","Read","Edit","Write","Glob","Grep","WebFetch","WebSearch","NotebookEdit","TodoWrite","Skill"]
   },
   "hooks": {
     "PostToolUse": [{"matcher":"Bash","hooks":[{"type":"command","command":"\$HOME/.claude/hooks/filter-bash-output.sh"}]}],
@@ -331,7 +351,8 @@ else
     echo "  → Skills in ~/.claude/skills/"
     echo "  → Hooks in ~/.claude/hooks/"
     echo "  → CLAUDE.md rules in ~/.claude/CLAUDE.md"
-    echo "  → Learned patterns in ~/.claude/rules/learned/"
+    echo "  → Learned patterns in ~/.claude/rules/learned/ (always loaded)"
+    echo "  → Domain knowledge in ~/.claude/knowledge/ (lazy-load)"
     echo "  → settings.json hooks configured"
     echo "  → superpowers plugin (if claude installed)"
     echo ""
