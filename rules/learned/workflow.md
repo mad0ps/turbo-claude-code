@@ -9,4 +9,6 @@
 0.8 | completing any major unit of work → run /finish to save context before starting next unit (pattern, 2026-03-29)
 0.7 | user expresses concern about large context causing confusion → narrow scope immediately, don't push forward (correction, 2026-03-29)
 0.7 | bulk file operations (move/rename/reorganize) → clarify exact scope with user before executing (correction, 2026-04-05)
+0.7 | about to delete/remove files → show contents first, let user decide what's worth keeping (correction, 2026-04-05)
+0.8 | updating linked repos (turbo-claude-code ↔ turbo-terminal) → sync both in same session to prevent drift (pattern, 2026-04-05)
 0.9 | entering domain (design/research/writing/devops/etc) → read ~/.claude/knowledge/{domain}.md first (system, 2026-04-05)
