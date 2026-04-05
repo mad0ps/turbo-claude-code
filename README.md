@@ -25,8 +25,9 @@ curl -fsSL https://raw.githubusercontent.com/mad0ps/turbo-claude-code/main/insta
 | `skills/` | `~/.claude/skills/` | Кастомные скилы для Claude Code |
 | `hooks/` | `~/.claude/hooks/` | Bash-хуки (фильтр вывода, напоминания) |
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Глобальные правила поведения Claude |
-| `rules/learned/` | `~/.claude/rules/learned/` | Накопленные паттерны и инстинкты |
-| `settings.json` | `~/.claude/settings.json` | Конфиг хуков (генерируется с правильными путями) |
+| `rules/learned/` | `~/.claude/rules/learned/` | Универсальные инстинкты (грузятся всегда) |
+| `knowledge/` | `~/.claude/knowledge/` | Доменные знания (lazy-load по необходимости) |
+| `settings.json` | `~/.claude/settings.json` | Permissions + хуки (мержится с существующим) |
 | superpowers plugin | — | `claude plugin install superpowers@superpowers-marketplace` |
 
 ---
@@ -36,8 +37,8 @@ curl -fsSL https://raw.githubusercontent.com/mad0ps/turbo-claude-code/main/insta
 | Скил | Назначение |
 |------|------------|
 | `/point` | Атомарный чекпоинт: lint → test → log → commit → push → CI |
-| `/reflect` | Извлечь инстинкты из сессии в `rules/learned/` |
-| `/finish` | Завершить ветку разработки |
+| `/reflect` | Извлечь инстинкты → `rules/learned/` (universal) или `knowledge/` (domain) |
+| `/finish` | Завершить сессию: /reflect + /save-context |
 | `/learn` | Зафиксировать урок |
 | `/fact-check` | Проверить факты перед публикацией |
 | `/web-research` | Веб-исследование через агентов |
@@ -50,8 +51,8 @@ curl -fsSL https://raw.githubusercontent.com/mad0ps/turbo-claude-code/main/insta
 
 ## Хуки
 
-- **filter-bash-output.sh** — фильтрует избыточный вывод bash-команд
-- **stop-reminder.sh** — напоминание после завершения задачи
+- **filter-bash-output.sh** — обрезает вывод >200 строк для экономии токенов (требует python3)
+- **stop-reminder.sh** — напоминает запустить /finish перед выходом из сессии
 
 ---
 
@@ -61,9 +62,11 @@ curl -fsSL https://raw.githubusercontent.com/mad0ps/turbo-claude-code/main/insta
 1. Клонирует репо в `~/turbo-claude-code` (или делает `git pull` если уже есть)
 2. Создаёт симлинки: `~/.claude/skills/<name>` → репо (per-skill)
 3. Создаёт симлинки: `~/.claude/hooks/<name>` → репо
-4. Симлинкует `CLAUDE.md` и `rules/learned/`
-5. Генерирует `settings.json` с хуками (через python3)
+4. Симлинкует `CLAUDE.md`, `rules/learned/` и `knowledge/`
+5. Мержит `settings.json` — добавляет permissions и хуки, сохраняя кастомные настройки (python3)
 6. Устанавливает superpowers плагин если claude найден
+
+Безопасен для `curl | bash` — обёрнут в `main()` wrapper.
 
 Идемпотентен — можно запускать повторно, существующие конфиги бэкапятся.
 

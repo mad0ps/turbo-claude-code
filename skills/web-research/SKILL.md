@@ -22,7 +22,7 @@ Research the topic: $ARGUMENTS
 - **Summary** (2-3 sentences)
 - **Key Findings** (bullet points)
 - **Sources** (with URLs)
-- **Relevance to Our Business** (how this affects our projects)
+- **Relevance** (how this affects current projects)
 - **Recommended Actions** (if any)
 
 ### Security

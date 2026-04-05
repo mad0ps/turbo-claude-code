@@ -3,7 +3,10 @@
 # ============================================
 # turbo-claude-code Installer
 # One-command setup for Claude Code skills, hooks, and config
+# Wrapped in main() for safe curl|bash execution
 # ============================================
+
+main() {
 
 set -euo pipefail
 
@@ -191,21 +194,19 @@ else
     warn "rules/learned not found in repo"
 fi
 
-# knowledge (lazy-load domain instincts)
+# knowledge (lazy-load domain instincts — symlink as directory, like rules/learned)
 if [ -d "$REPO_DIR/knowledge" ]; then
     if [ "$DRY_RUN" = false ]; then
-        mkdir -p "$HOME/.claude/knowledge"
+        if [ -d "$HOME/.claude/knowledge" ] && [ ! -L "$HOME/.claude/knowledge" ]; then
+            backup_dir="$HOME/.claude/knowledge.backup-$(date +%Y%m%d-%H%M%S)"
+            mv "$HOME/.claude/knowledge" "$backup_dir"
+            warn "Backed up existing knowledge/ to $backup_dir"
+        fi
 
-        for knowledge_file in "$REPO_DIR/knowledge"/*.md; do
-            if [ -f "$knowledge_file" ]; then
-                fname=$(basename "$knowledge_file")
-                target="$HOME/.claude/knowledge/$fname"
-                ln -sfn "$knowledge_file" "$target"
-            fi
-        done
+        ln -sfn "$REPO_DIR/knowledge" "$HOME/.claude/knowledge"
         info "Symlinked knowledge/ (lazy-load domain instincts)"
     else
-        echo "[DRY-RUN] Would symlink knowledge/*.md -> ~/.claude/knowledge/"
+        echo "[DRY-RUN] Would symlink knowledge/: $REPO_DIR/knowledge -> ~/.claude/knowledge"
     fi
 else
     warn "knowledge directory not found in repo"
@@ -239,7 +240,6 @@ import json
 import os
 
 settings_path = "$SETTINGS_PATH"
-repo_dir = "$REPO_DIR"
 home_dir = "$HOME"
 
 # Load existing settings or start fresh
@@ -249,35 +249,34 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     settings = {}
 
-# Ensure permissions.allow list exists
-if 'permissions' not in settings:
-    settings['permissions'] = {}
-if 'allow' not in settings['permissions']:
-    settings['permissions']['allow'] = []
+# Ensure permissions.allow has default tools
+default_perms = ['Bash','Read','Edit','Write','Glob','Grep','WebFetch','WebSearch','NotebookEdit','TodoWrite','Skill']
+perms = settings.setdefault('permissions', {})
+existing = set(perms.get('allow', []))
+existing.discard('Task')  # migrate legacy
+existing.update(default_perms)
+perms['allow'] = sorted(existing)
 
-# Always update hooks section with correct paths
-if 'hooks' not in settings:
-    settings['hooks'] = {}
-
-settings['hooks'] = {
-    'PostToolUse': [
-        {
-            'matcher': 'Bash',
-            'hooks': [{'type': 'command', 'command': f'{home_dir}/.claude/hooks/filter-bash-output.sh'}]
-        }
-    ],
-    'Stop': [
-        {
-            'matcher': '',
-            'hooks': [{'type': 'command', 'command': f'{home_dir}/.claude/hooks/stop-reminder.sh'}]
-        }
-    ]
-}
+# Merge hooks by key (preserve user's custom hooks like PreToolUse, etc.)
+hooks = settings.setdefault('hooks', {})
+hooks['PostToolUse'] = [
+    {
+        'matcher': 'Bash',
+        'hooks': [{'type': 'command', 'command': f'{home_dir}/.claude/hooks/filter-bash-output.sh'}]
+    }
+]
+hooks['Stop'] = [
+    {
+        'matcher': '',
+        'hooks': [{'type': 'command', 'command': f'{home_dir}/.claude/hooks/stop-reminder.sh'}]
+    }
+]
 
 # Write updated settings
 os.makedirs(os.path.dirname(settings_path), exist_ok=True)
 with open(settings_path, 'w') as f:
     json.dump(settings, f, indent=2)
+    f.write('\n')
 PYEOF
 
         info "Generated/merged settings.json"
@@ -367,3 +366,7 @@ else
         echo "  → /reflect       (extract instincts)"
     fi
 fi
+
+} # end main()
+
+main "$@"
