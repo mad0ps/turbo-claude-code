@@ -1,55 +1,46 @@
 #!/usr/bin/env bash
 # PostToolUse hook: truncate large bash outputs to save tokens.
-# Reads the tool result from stdin (JSON), checks stdout length,
-# and truncates if over threshold.
-#
-# Claude Code hook protocol:
-#   stdin  = JSON {"tool_name":"Bash","tool_input":{...},"tool_output":{"stdout":"...","stderr":"..."}}
-#   stdout = JSON {"decision":"allow"} or {"decision":"allow","reason":"...","tool_output":{...}}
-
-set -euo pipefail
-
-MAX_LINES=200
-TAIL_LINES=50
 
 input=$(cat)
 
-tool_name=$(echo "$input" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_name',''))" 2>/dev/null || echo "")
-
-if [[ "$tool_name" != "Bash" ]]; then
-    echo '{"decision":"allow"}'
-    exit 0
-fi
-
-# Extract stdout, count lines, truncate if needed
-result=$(python3 -c "
+result=$(echo "$input" | python3 -c "
 import sys, json
 
-data = json.load(sys.stdin)
-output = data.get('tool_output', {})
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print('{\"continue\": true}')
+    sys.exit(0)
 
-# Handle both string and dict tool_output
-if isinstance(output, str):
-    stdout = output
-else:
-    stdout = output.get('stdout', '')
+if data.get('tool_name') != 'Bash':
+    print('{\"continue\": true}')
+    sys.exit(0)
 
-lines = stdout.split('\n')
-total = len(lines)
-max_lines = $MAX_LINES
-tail_lines = $TAIL_LINES
-
-if total > max_lines:
-    head = lines[:max_lines - tail_lines]
-    tail = lines[-tail_lines:]
-    truncated = '\n'.join(head) + f'\n\n... [{total - max_lines} lines truncated, showing first {max_lines - tail_lines} + last {tail_lines}] ...\n\n' + '\n'.join(tail)
-    print(json.dumps({'decision': 'allow', 'tool_output': truncated}))
-else:
-    print(json.dumps({'decision': 'allow'}))
-" <<< "$input" 2>/dev/null)
+try:
+    MAX_LINES = 200
+    TAIL_LINES = 50
+    output = data.get('tool_response') or data.get('tool_output', {})
+    if isinstance(output, str):
+        stdout = output
+    elif isinstance(output, dict):
+        stdout = output.get('stdout', output.get('output', ''))
+    else:
+        stdout = ''
+    lines = stdout.split('\n')
+    total = len(lines)
+    if total > MAX_LINES:
+        head = lines[:MAX_LINES - TAIL_LINES]
+        tail = lines[-TAIL_LINES:]
+        truncated = '\n'.join(head) + '\n\n... [' + str(total - MAX_LINES) + ' lines truncated] ...\n\n' + '\n'.join(tail)
+        print(json.dumps({'continue': True, 'toolResponse': {'stdout': truncated, 'stderr': ''}}))
+    else:
+        print('{\"continue\": true}')
+except Exception:
+    print('{\"continue\": true}')
+" 2>/dev/null || echo '{"continue": true}')
 
 if [[ -n "$result" ]]; then
-    echo "$result"
+    printf '%s\n' "$result"
 else
-    echo '{"decision":"allow"}'
+    printf '{"continue": true}\n'
 fi
