@@ -1,33 +1,39 @@
-# Global Rules
+# turbo-claude-code
 
-## Golden Rule
-**ВРЕМЯ = САМЫЙ ЦЕННЫЙ РЕСУРС.** Не гадать — сразу лезть на сервер/в среду и разбираться. Не пушить наугад, тестировать на месте. Каждый холостой deploy-цикл — потерянное время.
+## Что это
+Репо с кастомными skills, hooks, rules и knowledge для Claude Code. Source of truth — всё в ~/.claude/ через симлинки.
 
-## Language
-All communication in Russian unless user switches to English.
+## Стек
+Bash / Python (хуки) / Markdown (skills, rules, knowledge)
 
-## Commands
-- `"."` → invoke `/point` skill (atomic checkpoint: lint → test → log → commit → push → verify CI)
-- `"claude sync"` → synchronize project CLAUDE.md with docs/ folder (CLAUDE.md = source of truth)
+## Где живёт
+- Репо: github.com/mad0ps/turbo-claude-code
+- Локально: ~/Documents/pr0j3cts/turbo-claude-code/
+- Симлинки: ~/.claude/hooks/ → repo/hooks/, ~/.claude/skills/ → repo/skills/
 
-## Server Access
-- SSH разрешён для логов и диагностики, НИКОГДА не запускать build/deploy/restart напрямую
-- ВСЕ деплои через CI/CD (push → GitHub Actions → deploy)
-- Конкретные серверы — в project CLAUDE.md каждого проекта
+## Структура
+```
+hooks/          ← shell-скрипты, симлинки в ~/.claude/hooks/
+skills/         ← кастомные skills (lazy-load)
+rules/learned/  ← компактные инстинкты (всегда загружаются)
+knowledge/      ← доменные знания (lazy-load)
+install.sh      ← полная установка с нуля
+```
 
-## Project Memory (.context/)
-All session context MUST live inside the project directory in `.context/`. This ensures portability.
-Required files: `MEMORY.md`, `session-log.md`, `lessons-learned.md`, `todo.md`, `decisions.md`
-- Session START: read `.context/MEMORY.md` + last entry in `session-log.md` + `todo.md`
-- Session END: update `session-log.md`, `todo.md`, `MEMORY.md`. Commit + push
-- `.context/` MUST be committed to git (not in .gitignore)
-- Note: `~/.claude/projects/*/memory/` is used by auto-memory system (cross-project facts), `.context/` is for project-specific state
+## Как деплоить изменения
+```bash
+# Изменил хук или скрипт:
+git add <file> && git commit -m "..." && git push
+# Симлинки уже указывают на repo — изменения применяются мгновенно
+```
 
-## NeuroCortex — Partner Memory System
-At session START: read `~/Documents/pr0j3cts/neuro-cortex/CORTEX.md` + `handoff.md`
-Deep-dive files (khan.md, patterns.md, capabilities.md) — read when relevant, not every time.
+## Правила
+- Симлинки — source of truth. НЕ редактировать файлы напрямую в ~/.claude/ если они симлинки
+- skills/ — писать на английском (экономия токенов)
+- После добавления нового хука — зарегистрировать в ~/.claude/settings.json
+- После добавления superpowers skills — install.sh обновит симлинки (sort -V → latest)
 
-## Conventions
-- Use TodoWrite to track multi-step tasks, mark completed immediately
-- Commit messages in English, concise, descriptive
-- No Co-Authored-By in commits
+## Известные грабли
+- PostToolUse формат: `{"continue": true}` — НЕ `{"decision":"allow"}` (API изменился)
+- SessionStart hook stdout → инжектируется в контекст Claude автоматически
+- superpowers skill symlinks НЕ обновляются автоматически при обновлении плагина → запустить install.sh
