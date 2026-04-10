@@ -16,7 +16,7 @@ done
 echo "=== Session Summary ===" >&2
 
 if [[ -n "$git_dir" ]]; then
-    commits=$(git -C "$git_dir" log --since=today --oneline --color=never 2>/dev/null)
+    commits=$(git -C "$git_dir" log --since="$(date +%Y-%m-%d)" --oneline --color=never 2>/dev/null)
     if [[ -n "$commits" ]]; then
         count=$(printf '%s\n' "$commits" | wc -l | tr -d ' ')
         echo "Today's commits ($count):" >&2
