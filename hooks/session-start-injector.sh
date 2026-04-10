@@ -18,6 +18,11 @@ for i in 1 2 3; do
     search_dir="$(dirname "$search_dir")"
 done
 
+# Sync neuro-cortex with GitHub (silent, best-effort)
+if [[ -d "$CORTEX_DIR/.git" ]]; then
+    git -C "$CORTEX_DIR" pull --ff-only --quiet 2>/dev/null || true
+fi
+
 echo "=== SESSION CONTEXT ==="
 echo "Date: $(date '+%Y-%m-%d %H:%M')"
 echo ""
