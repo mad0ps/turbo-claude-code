@@ -335,6 +335,35 @@ else
     warn "claude not found — skipping superpowers plugin install"
 fi
 
+# Fix superpowers skill symlinks: always point to latest cached version
+# (Claude Code does not auto-update skill symlinks when plugin updates)
+SUPERPOWERS_CACHE="$HOME/.claude/plugins/cache/superpowers-marketplace/superpowers"
+if [ -d "$SUPERPOWERS_CACHE" ]; then
+    # Find the latest installed version
+    LATEST_VERSION=$(ls -1 "$SUPERPOWERS_CACHE" 2>/dev/null | sort -V | tail -1)
+    if [ -n "$LATEST_VERSION" ]; then
+        SKILLS_SRC="$SUPERPOWERS_CACHE/$LATEST_VERSION/skills"
+        if [ -d "$SKILLS_SRC" ]; then
+            if [ "$DRY_RUN" = false ]; then
+                info "Symlinking superpowers skills → $LATEST_VERSION"
+                for skill_dir in "$SKILLS_SRC"/*/; do
+                    skill_name=$(basename "$skill_dir")
+                    ln -sfn "$skill_dir" "$HOME/.claude/skills/$skill_name"
+                    info "  → $skill_name"
+                done
+            else
+                echo "[DRY-RUN] Would symlink superpowers skills from $SKILLS_SRC → ~/.claude/skills/"
+            fi
+        else
+            warn "Superpowers skills dir not found at $SKILLS_SRC"
+        fi
+    else
+        warn "No superpowers version found in cache"
+    fi
+else
+    warn "Superpowers cache not found — run after plugin install"
+fi
+
 # ============================================
 # DONE
 # ============================================
