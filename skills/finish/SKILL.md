@@ -1,11 +1,21 @@
 ---
 name: finish
-description: Use when user invokes /finish or ends a session — orchestrates /reflect (extract instincts while context is full) then /save-context (persist session facts)
+description: Use when user invokes /finish or ends a session — orchestrates /reflect, /save-context, and vault wiki-append. Pass `clear` as arg to also prompt for session clear.
+argument-hint: "[clear]"
 ---
 
 # Finish — End-of-Session Orchestrator
 
-Wraps `/reflect` + `/save-context` in correct order. Call once at session end.
+Wraps `/reflect` + `/save-context` + vault wiki-append in correct order. Call once at session end.
+
+## Storage Alignment (post-#33 git-only flow)
+
+- `<cwd>/.context/` — project-local state (written by `/save-context`)
+- `~/Documents/pr0j3cts/_vault/raw/sessions/*.md` — session summary (written by `/save-context`)
+- `~/Documents/pr0j3cts/_vault/wiki/projects/project.<name>.md` — long-lived project note (updated by THIS skill, step 3)
+- `~/.claude/rules/learned/*.md` — behavioral instincts (written by `/reflect`)
+
+All writes go through `Write`/`Edit` directly. **No MCP, no HTTP API, no ssh.** Obsidian Git plugin picks up vault changes within 10 min and pushes to GitHub.
 
 ## Why Order Matters
 
@@ -14,21 +24,39 @@ Wraps `/reflect` + `/save-context` in correct order. Call once at session end.
 ## Steps
 
 1. **Invoke `/reflect`** — extract behavioral instincts while context is rich
-2. **Invoke `/save-context`** — persist session facts (session-log, lessons-learned, memory)
-3. **Report summary** — combine outputs from both
+2. **Invoke `/save-context`** — persist session facts (project `.context/`, vault `raw/sessions/`)
+3. **Vault wiki-append** — update the project's wiki note in `_vault/wiki/projects/`:
+   - Derive note_id: `project.<cwd-basename>` (e.g., cwd `memory-mcp` → `project.memory-mcp`)
+   - Target file: `~/Documents/pr0j3cts/_vault/wiki/projects/<note_id>.md`
+   - If file exists:
+     - Use `Edit` to prepend one line to the `## log` section: `- YYYY-MM-DD — <what was done, decisions, deploys — one line, no fluff>`
+     - If `## hot` section needs a state change (new milestone, blocker, pivot) — update it too via `Edit`
+     - Bump `updated: 'YYYY-MM-DD'` in frontmatter
+   - If file doesn't exist → skip (not every cwd has a wiki note; that's fine)
+   - **Never** use MCP `append_log`, `save_wiki`, or HTTP `/api/wiki/*` — legacy, being removed in task #36
+4. **Report summary** — combine outputs from all steps
+5. **If `$ARGUMENTS` contains `clear`** → append prominent prompt to run `/clear` (skills can't invoke `/clear` directly — user runs it manually)
 
 ## Output
 
 ```
 === /finish ===
 
-[/reflect output]
-Extracted N instincts: ...
-
-[/save-context output]
-Session saved: ...
+Reflect: N instincts extracted
+Save-context: .context/ updated + vault/raw/sessions/<file>.md written
+Vault: project.memory-mcp — log +1 line, updated=YYYY-MM-DD
+  (or: project.<name>.md not found, skipped)
 
 Session complete.
+```
+
+With `clear` arg, append:
+```
+
+╔════════════════════════════════════════╗
+║  ✅ Session saved.                      ║
+║  → Run /clear now for fresh context    ║
+╚════════════════════════════════════════╝
 ```
 
 ## When NOT to Use
