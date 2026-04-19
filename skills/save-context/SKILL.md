@@ -115,7 +115,63 @@ Rules:
 - Focus on **cross-project reusable knowledge**, not daily diary
 - Don't re-narrate session-log contents
 
-### Step 7: Git Commit `.context/` (if project is a git repo)
+### Step 7: Update Checkpoint File
+
+Path: `~/Documents/pr0j3cts/_vault/raw/sessions/checkpoint-<project>.md`
+
+- `<project>` = derived from the directory containing `.context/` (same slug rule as vault session file). If no `.context/` was found in Step 1's walk, use the cwd basename.
+- **Overwrite** (not append) — this is a single per-project state file, read by SessionStart hook on next session.
+- If vault path unavailable — skip silently, note in Step 9 output.
+
+**File format** (YAML frontmatter + JSON task block + free-form sections):
+
+```markdown
+---
+id: checkpoint.<project>
+type: checkpoint
+project: <project>
+updated: <ISO8601 UTC, e.g. 2026-04-20T01:45Z>
+session_id: <current session id if known>
+active_task: "<id of task currently in_progress, or empty>"
+epic: "<current epic name, optional>"
+summary: "<≤150 chars one-liner for Graphify node label>"
+---
+
+# Checkpoint — <project>
+
+> Machine-readable snapshot of active task state. Read by SessionStart hook
+> so a fresh session resumes without transcript scan recovery. Overwritten by
+> `/save-context` and PreCompact hook.
+
+## Active Tasks
+
+​```json
+[
+  {"id":"<task id>","subject":"<text>","status":"pending|in_progress|completed|deleted","blockedBy":["..."],"blocks":["..."],"note":"<optional>"}
+]
+​```
+
+## Open Questions
+- <only items that need a decision across sessions>
+
+## Last Decisions
+- **<date>** — <decision + brief why>
+
+## Next Concrete Step
+<one paragraph: what the next session starts with>
+
+## Context Notes
+- <architectural hints or references that shouldn't be re-derived from scratch>
+```
+
+Rules:
+- Include ALL pending/in_progress tasks with full deps. Completed tasks are NOT in checkpoint — they live in `.context/todo.md` Done section.
+- Keep `Last Decisions` to 3-5 most relevant. Older decisions stay in `.context/decisions.md`.
+- `active_task` front-matter field = id of the single in_progress task (Khan works on one thing at a time). Empty if nothing in_progress.
+- Do NOT duplicate content from session-log. Checkpoint = compact, stable, machine-readable. session-log = narrative.
+- Keep file under ~150 lines.
+
+### Step 8: Git Commit `.context/` (if project is a git repo)
 
 Per global rule "Session END: update ..., commit + push":
 
@@ -136,7 +192,7 @@ If cwd is NOT a git repo → skip, note in output.
 
 Do NOT commit/push anything outside `.context/` — no unrelated staging.
 
-### Step 8: Confirm
+### Step 9: Confirm
 
 Output format:
 
@@ -148,6 +204,7 @@ Output format:
 - .context/todo.md — <N marked done / N added>
 - .context/decisions.md — <N new / no changes>
 - _vault/raw/sessions/<file>.md — <written / skipped (reason)>
+- _vault/raw/sessions/checkpoint-<project>.md — <updated / skipped (reason)>
 - git: <committed <sha> / no changes / not a repo>
 ```
 
