@@ -1,9 +1,12 @@
 # Session Log — turbo-claude-code
 
-## 2026-04-26 — /finish always-banner + statusline overflow fix
+## 2026-04-26 — /finish always-banner + statusline overflow fix + banner alignment
 
 ### Focus
-Quality-of-life UX правки: `/finish` skill теперь всегда показывает "/clear next" баннер (не только при `clear` arg); кастомный statusline-command.sh адаптируется под длинные project names и узкий терминал.
+Quality-of-life UX правки: `/finish` skill теперь всегда показывает "/clear next" баннер (не только при `clear` arg); кастомный statusline-command.sh адаптируется под длинные project names и узкий терминал. Фоллоу-ап: выровнял правую границу баннера (✅ занимает 2 cells, выпирала на 1 — убран один trailing space).
+
+### Late update (after first /finish):
+- **Banner alignment fix** (commit `0b5b521`): правый край рамки баннера в `/finish` был неровный из-за ✅ (2 visual cells по `unicodedata.east_asian_width="W"`), убран один trailing space в строке `║  ✅ Session saved.` → все 4 строки теперь = 42 visual cells. Push прошёл (`27f73ea..0b5b521`).
 
 ### Done
 
