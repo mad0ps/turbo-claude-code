@@ -51,7 +51,7 @@ Vault: project.memory-mcp — log +1 line, updated=YYYY-MM-DD
 Session complete.
 
 ╔════════════════════════════════════════╗
-║  ✅ Session saved.                      ║
+║  ✅ Session saved.                     ║
 ║  → Run /clear now for fresh context    ║
 ╚════════════════════════════════════════╝
 ```
