@@ -1,7 +1,6 @@
 ---
 name: finish
-description: Use when user invokes /finish or ends a session — orchestrates /reflect, /save-context, and vault wiki-append. Pass `clear` as arg to also prompt for session clear.
-argument-hint: "[clear]"
+description: Use when user invokes /finish or ends a session — orchestrates /reflect, /save-context, and vault wiki-append. Always ends with a prominent prompt to run /clear (skills can't invoke /clear directly).
 ---
 
 # Finish — End-of-Session Orchestrator
@@ -35,9 +34,11 @@ All writes go through `Write`/`Edit` directly. **No MCP, no HTTP API, no ssh.** 
    - If file doesn't exist → skip (not every cwd has a wiki note; that's fine)
    - **Never** use MCP `append_log`, `save_wiki`, or HTTP `/api/wiki/*` — legacy, being removed in task #36
 4. **Report summary** — combine outputs from all steps
-5. **If `$ARGUMENTS` contains `clear`** → append prominent prompt to run `/clear` (skills can't invoke `/clear` directly — user runs it manually)
+5. **Always append the prominent /clear prompt** — Claude Code can't auto-invoke `/clear` from a skill (it's a runtime command), so the user runs it manually as the second action. Showing the banner every time keeps the workflow consistent: `/finish` always means "save + ready for /clear".
 
 ## Output
+
+Always prints both blocks back-to-back:
 
 ```
 === /finish ===
@@ -48,10 +49,6 @@ Vault: project.memory-mcp — log +1 line, updated=YYYY-MM-DD
   (or: project.<name>.md not found, skipped)
 
 Session complete.
-```
-
-With `clear` arg, append:
-```
 
 ╔════════════════════════════════════════╗
 ║  ✅ Session saved.                      ║
